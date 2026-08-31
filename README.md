@@ -14,8 +14,29 @@ data/
 scripts/
   enrich_dataset.py → script que reproduce el dataset derivado
 docs/
-  diagrama_sistema.md → diseño conceptual del sistema (Fase 2 del proyecto)
+  diagrama_sistema.md      → diseño conceptual del sistema (Fase 2 del proyecto)
+  decisiones_gerenciales.md → las tres decisiones de alta dirección (Fase 3)
+  index.html                → landing page de las herramientas interactivas
+  simulador-margenes.html          → simulador de sensibilidad de márgenes
+  detector-anomalias-tickets.html  → detector de anomalías en volumen de tickets
+  umbral-sla.html                  → umbral de alerta de riesgo de SLA
 ```
+
+## Herramientas interactivas
+
+Publicadas vía GitHub Pages en **https://fghnic.github.io/nodo-consultoria-ti/**
+(o localmente: abre cualquiera de los `.html` de `docs/` directo en el navegador,
+no requieren instalación). Cada una pone a prueba, con los datos reales del
+dataset, una de las tres decisiones gerenciales del informe:
+
+- **Simulador de márgenes** — ajusta los supuestos de costo (minutos por
+  interacción, tarifa interna) y observa si la conclusión sobre el cliente
+  menos rentable se sostiene.
+- **Detector de anomalías en tickets** — media móvil y z-score sobre el
+  volumen diario de tickets de 2023, para detectar picos inusuales por
+  cliente antes de que afecten el margen.
+- **Umbral de alerta de SLA** — calibra en qué punto del tiempo prometido
+  el sistema debería avisar, contra los 1,912 tickets resueltos reales.
 
 ## Fuente de datos y atribución
 

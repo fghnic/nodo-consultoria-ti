@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Simulador de márgenes — Nodo Consultoría TI</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+  :root {
+    --bg: #0F1620;
+    --panel: #161F2C;
+    --card: #1B2534;
+    --border: #2A3648;
+    --border-soft: #212C3C;
+    --text: #EDF1F6;
+    --text-muted: #8B97A8;
+    --text-faint: #5C6A7E;
+    --blue: #4F7CFF;
+    --blue-soft: #28324A;
+    --coral: #FF6B5C;
+    --coral-soft: #3A2530;
+    --green: #34D399;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    margin: 0;
+    padding: 28px 32px;
+  }
+  .brand { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 600; }
+  .subtitle { font-size: 13px; color: var(--text-faint); margin: 4px 0 0; }
+  .layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; margin-top: 24px; }
+  @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+  .stack { display: flex; flex-direction: column; gap: 20px; }
+
+  .slider-row { display: flex; justify-content: space-between; align-items: baseline; }
+  .slider-label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+  .slider-value { font-size: 15px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .slider-hint { font-size: 11.5px; color: var(--text-faint); }
+  input[type="range"] { width: 100%; accent-color: var(--blue); margin: 8px 0; }
+
+  .reset-btn {
+    font-size: 12.5px; color: var(--text-muted); background: none; border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 0; width: 100%; cursor: pointer; display: none;
+  }
+  .reset-btn:hover { color: var(--text); border-color: var(--text-faint); }
+
+  .stat-label { font-size: 11.5px; color: var(--text-faint); margin: 0 0 4px; }
+  .stat-big { font-size: 26px; font-weight: 700; margin: 0; }
+  .stat-mid { font-size: 20px; font-weight: 600; margin: 0; color: var(--text); }
+  .divider { border-top: 1px solid var(--border-soft); padding-top: 12px; margin-top: 12px; }
+
+  .row { display: grid; grid-template-columns: 28px 170px 1fr 90px 56px; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .avatar { width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 700; }
+  .cliente-nombre { font-size: 12.5px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .track { background: var(--blue-soft); border-radius: 6px; height: 6px; overflow: hidden; }
+  .track.negativo { background: var(--coral-soft); }
+  .fill { height: 100%; border-radius: 6px; background: var(--blue); }
+  .fill.atencion { background: var(--coral); }
+  .costo { font-size: 11.5px; color: var(--text-faint); text-align: right; font-variant-numeric: tabular-nums; }
+  .margen { font-size: 12.5px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+  .margen.sano { color: #8FE8C4; }
+  .margen.atencion { color: #FFB4A8; }
+  .footnote { font-size: 11px; color: var(--text-faint); margin: 16px 0 0; }
+  .titulo-panel { font-size: 14px; font-weight: 600; color: var(--text); margin: 0 0 16px; }
+  .titulo-card { font-size: 13px; font-weight: 600; color: var(--text); margin: 0 0 4px; }
+</style>
+</head>
+<body>
+
+  <div class="brand">Simulador de sensibilidad de márgenes</div>
+  <p class="subtitle">Nodo Consultoría TI — prueba qué tan sólida es la rentabilidad por cliente frente a los supuestos usados en el análisis</p>
+
+  <div class="layout">
+    <div class="stack">
+      <div class="panel">
+        <p class="titulo-card">Supuestos</p>
+
+        <div class="slider-row">
+          <span class="slider-label">Minutos por interacción</span>
+          <span class="slider-value" id="minutos-val">25 min</span>
+        </div>
+        <input type="range" id="minutos" min="10" max="40" step="1" value="25" />
+        <p class="slider-hint">Línea base del informe: 25 min</p>
+
+        <div class="slider-row" style="margin-top:18px;">
+          <span class="slider-label">Tarifa interna</span>
+          <span class="slider-value" id="tarifa-val">€45/h</span>
+        </div>
+        <input type="range" id="tarifa" min="25" max="70" step="1" value="45" />
+        <p class="slider-hint">Línea base del informe: €45/h</p>
+
+        <button class="reset-btn" id="reset-btn">Volver a la línea base</button>
+      </div>
+
+      <div class="card">
+        <p class="stat-label">Clientes en zona de atención (margen &lt; 70%)</p>
+        <p class="stat-big" id="stat-riesgo">0 de 12</p>
+        <div class="divider">
+          <p class="stat-label">Margen promedio</p>
+          <p class="stat-mid" id="stat-promedio">—</p>
+        </div>
+        <div id="stat-cambios" class="divider" style="display:none;">
+          <p style="font-size:12px; color: var(--coral); margin:0;" id="stat-cambios-text"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <p class="titulo-panel">Margen por cliente bajo el supuesto actual</p>
+      <div id="lista-clientes"></div>
+      <p class="footnote">* cliente que cambia de categoría (sano / atención) respecto a la línea base del informe (25 min/interacción, €45/h)</p>
+    </div>
+  </div>
+
+<script>
+  const BASE_MIN = 25;
+  const BASE_TARIFA = 45;
+
+  const CLIENTES_BASE = [
+    { nombre: "Wisła Digital Solutions", horasBase: 670.9, contrato: 90000 },
+    { nombre: "Sofia Cloud Systems", horasBase: 278.4, contrato: 40000 },
+    { nombre: "Vltava Tech s.r.o.", horasBase: 335.1, contrato: 50000 },
+    { nombre: "Triglav Software", horasBase: 286.3, contrato: 45000 },
+    { nombre: "Aegean Systems SA", horasBase: 309.6, contrato: 50000 },
+    { nombre: "Ibérica Data Solutions", horasBase: 325.0, contrato: 55000 },
+    { nombre: "Lombardia Software Group", horasBase: 646.7, contrato: 120000 },
+    { nombre: "Rheinbrück Industries", horasBase: 800.0, contrato: 150000 },
+    { nombre: "Alpen Tech Consulting", horasBase: 293.7, contrato: 60000 },
+    { nombre: "Seine Informatique", horasBase: 337.5, contrato: 70000 },
+    { nombre: "Thames Analytics Ltd", horasBase: 674.1, contrato: 140000 },
+    { nombre: "Shannon Digital Services", horasBase: 312.5, contrato: 65000 },
+  ];
+
+  const PALETTE = ["#4F7CFF", "#34D399", "#F5B84F", "#FF6B5C", "#9B8CFF", "#4FD1C5"];
+
+  function hashColor(str) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = str.charCodeAt(i) + ((h << 5) - h);
+    return PALETTE[Math.abs(h) % PALETTE.length];
+  }
+  function initials(name) {
+    return name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+  }
+  function pct(n, d = 1) { return (n * 100).toFixed(d) + "%"; }
+  function money(n) { return "€" + Math.round(n).toLocaleString("es-MX"); }
+
+  const minutosInput = document.getElementById("minutos");
+  const tarifaInput = document.getElementById("tarifa");
+  const minutosVal = document.getElementById("minutos-val");
+  const tarifaVal = document.getElementById("tarifa-val");
+  const resetBtn = document.getElementById("reset-btn");
+  const lista = document.getElementById("lista-clientes");
+  const statRiesgo = document.getElementById("stat-riesgo");
+  const statPromedio = document.getElementById("stat-promedio");
+  const statCambios = document.getElementById("stat-cambios");
+  const statCambiosText = document.getElementById("stat-cambios-text");
+
+  function render() {
+    const minutos = Number(minutosInput.value);
+    const tarifa = Number(tarifaInput.value);
+    minutosVal.textContent = minutos + " min";
+    tarifaVal.textContent = "€" + tarifa + "/h";
+
+    const esBase = minutos === BASE_MIN && tarifa === BASE_TARIFA;
+    resetBtn.style.display = esBase ? "none" : "block";
+
+    const clientes = CLIENTES_BASE.map(c => {
+      const interacciones = (c.horasBase * 60) / BASE_MIN;
+      const horas = (interacciones * minutos) / 60;
+      const costo = horas * tarifa;
+      const margenPct = (c.contrato - costo) / c.contrato;
+
+      const margenBase = (c.contrato - c.horasBase * BASE_TARIFA) / c.contrato;
+      const tierBase = margenBase < 0.7 ? "atencion" : "sano";
+      const tierAhora = margenPct < 0.7 ? "atencion" : "sano";
+
+      return { ...c, costo, margenPct, tierAhora, cambioTier: tierBase !== tierAhora };
+    }).sort((a, b) => a.margenPct - b.margenPct);
+
+    const enRiesgo = clientes.filter(c => c.margenPct < 0.7).length;
+    const promedio = clientes.reduce((s, c) => s + c.margenPct, 0) / clientes.length;
+    const cambios = clientes.filter(c => c.cambioTier).length;
+    const maxMargen = Math.max(...clientes.map(c => Math.abs(c.margenPct)), 0.01);
+
+    statRiesgo.textContent = enRiesgo + " de 12";
+    statRiesgo.style.color = enRiesgo > 0 ? "var(--coral)" : "var(--green)";
+    statPromedio.textContent = pct(promedio);
+
+    if (cambios > 0) {
+      statCambios.style.display = "block";
+      statCambiosText.textContent = cambios + (cambios > 1 ? " clientes cambian" : " cliente cambia") + " de categoría respecto a la línea base";
+    } else {
+      statCambios.style.display = "none";
+    }
+
+    lista.innerHTML = clientes.map(c => {
+      const color = hashColor(c.nombre);
+      const widthPct = Math.min(100, (Math.abs(c.margenPct) / maxMargen) * 100);
+      return `
+        <div class="row">
+          <div class="avatar" style="background:${color}26; color:${color};">${initials(c.nombre)}</div>
+          <span class="cliente-nombre">${c.nombre}</span>
+          <div class="track ${c.margenPct < 0 ? 'negativo' : ''}">
+            <div class="fill ${c.tierAhora === 'atencion' ? 'atencion' : ''}" style="width:${widthPct}%;"></div>
+          </div>
+          <span class="costo">${money(c.costo)}</span>
+          <span class="margen ${c.tierAhora}">${pct(c.margenPct)}${c.cambioTier ? ' *' : ''}</span>
+        </div>
+      `;
+    }).join("");
+  }
+
+  minutosInput.addEventListener("input", render);
+  tarifaInput.addEventListener("input", render);
+  resetBtn.addEventListener("click", () => {
+    minutosInput.value = BASE_MIN;
+    tarifaInput.value = BASE_TARIFA;
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>
