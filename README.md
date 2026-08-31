@@ -38,6 +38,11 @@ dataset, una de las tres decisiones gerenciales del informe:
 - **Umbral de alerta de SLA** — calibra en qué punto del tiempo prometido
   el sistema debería avisar, contra los 1,912 tickets resueltos reales.
 
+La hoja de cálculo del proyecto (`nodo_ti_kpis.xlsx`, entregable oficial,
+no incluida en este repositorio) replica las tres herramientas con fórmulas
+nativas de Excel: los mismos supuestos son celdas editables, y los mismos
+cálculos se recalculan en vivo dentro del propio archivo.
+
 ## Fuente de datos y atribución
 
 Este proyecto usa como base el **Technical Support Dataset**:

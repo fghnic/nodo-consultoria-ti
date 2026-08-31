@@ -52,3 +52,11 @@ sobredimensionado. Se propone:
 - Sistema de tickets/helpdesk ligero (ej. osTicket, o desarrollo a medida).
 - Dashboard de reportes (ej. Power BI o Google Data Studio) conectado a la
   base de tickets.
+
+## Prototipos funcionales
+
+Como prueba de concepto del "Dashboard directivo", se construyeron tres
+prototipos interactivos que implementan las reglas de decisión de esta
+sección con datos reales del dataset derivado. Ver `docs/index.html` y
+`README.md` (sección "Herramientas interactivas") para el detalle.
+
