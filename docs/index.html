@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Nodo Consultoría TI — Herramientas interactivas</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsvectormap/1.4.3/css/jsvectormap.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsvectormap/1.4.3/js/jsvectormap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsvectormap/1.4.3/maps/world.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
   :root {
@@ -65,6 +68,19 @@
   }
 
   h2.section-title { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 600; color: var(--text-muted); margin: 0 0 14px; }
+
+  .map-section { background: var(--panel); border: 1px solid var(--border); border-radius: 20px; padding: 26px; margin-bottom: 44px; }
+  .map-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; flex-wrap: wrap; gap: 14px; }
+  .map-title { font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 600; color: var(--text); margin: 0 0 4px; }
+  .map-desc { font-size: 12.5px; color: var(--text-faint); margin: 0; max-width: 460px; line-height: 1.5; }
+  .map-toggle { display: flex; gap: 4px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 4px; height: fit-content; }
+  .map-toggle button { font-size: 12.5px; font-weight: 500; padding: 7px 14px; border-radius: 7px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; }
+  .map-toggle button.active { background: var(--blue); color: #fff; }
+  #map { width: 100%; height: 420px; }
+  .map-legend { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 11.5px; color: var(--text-faint); }
+  .map-legend .bar { flex: 1; max-width: 220px; height: 8px; border-radius: 4px; }
+  .map-error { color: var(--text-faint); font-size: 13px; text-align: center; padding: 60px 20px; }
+
   .cards { display: flex; flex-direction: column; gap: 14px; }
   a.card {
     display: block; background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
@@ -128,6 +144,25 @@
       </div>
     </div>
 
+    <div class="map-section">
+      <div class="map-header">
+        <div>
+          <p class="map-title">Mapa de clientes por país</p>
+          <p class="map-desc">Los 12 clientes están construidos a partir del país de origen de cada ticket en el dataset real. Cambia la vista para leer rendimiento actual u oportunidad de negocio.</p>
+        </div>
+        <div class="map-toggle">
+          <button id="btn-margen" class="active">Margen (rendimiento)</button>
+          <button id="btn-volumen">Volumen (oportunidad)</button>
+        </div>
+      </div>
+      <div id="map"></div>
+      <div class="map-legend">
+        <span id="legend-min">—</span>
+        <div class="bar" id="legend-bar"></div>
+        <span id="legend-max">—</span>
+      </div>
+    </div>
+
     <h2 class="section-title">Herramientas interactivas</h2>
     <div class="cards">
       <a class="card" href="simulador-margenes.html">
@@ -161,6 +196,79 @@
   document.getElementById('spark').innerHTML = dias.map(v =>
     `<div style="height:${Math.max(8, (v / max) * 100)}%;"></div>`
   ).join('');
+
+  const MARGEN = { DE: 76.0, IT: 75.7, PL: 66.5, GB: 78.3, AT: 78.0, GR: 72.1, FR: 78.3, ES: 73.4, SI: 71.4, CZ: 69.8, IE: 78.4, BG: 68.7 };
+  const VOLUMEN = { DE: 306, IT: 303, PL: 287, GB: 283, AT: 144, GR: 144, FR: 158, ES: 133, SI: 159, CZ: 134, IE: 148, BG: 131 };
+
+  const btnMargen = document.getElementById('btn-margen');
+  const btnVolumen = document.getElementById('btn-volumen');
+  const legendMin = document.getElementById('legend-min');
+  const legendMax = document.getElementById('legend-max');
+  const legendBar = document.getElementById('legend-bar');
+
+  function setLegend(vista) {
+    if (vista === 'margen') {
+      legendMin.textContent = '66.5% (Wisła)';
+      legendMax.textContent = '78.4% (Shannon)';
+      legendBar.style.background = 'linear-gradient(90deg, #FF6B5C, #34D399)';
+    } else {
+      legendMin.textContent = '131 tickets (Bulgaria)';
+      legendMax.textContent = '306 tickets (Alemania)';
+      legendBar.style.background = 'linear-gradient(90deg, #1B2A52, #4F7CFF)';
+    }
+  }
+
+  try {
+    if (typeof jsVectorMap === 'undefined') throw new Error('jsVectorMap no cargó');
+
+    const map = new jsVectorMap({
+      selector: '#map',
+      map: 'world',
+      zoomButtons: false,
+      zoomOnScroll: false,
+      backgroundColor: 'transparent',
+      regionStyle: {
+        initial: { fill: '#212C3C', stroke: '#0F1620', strokeWidth: 0.5 },
+        hover: { fillOpacity: 0.85 },
+      },
+      series: {
+        regions: [{
+          attribute: 'fill',
+          values: MARGEN,
+          scale: ['#FF6B5C', '#34D399'],
+          normalizeFunction: 'linear',
+        }],
+      },
+      onRegionTooltipShow: function (event, tooltip, code) {
+        if (MARGEN[code] !== undefined) {
+          tooltip.text(tooltip.text() + ': ' + MARGEN[code].toFixed(1) + '% margen · ' + VOLUMEN[code] + ' tickets', true);
+        }
+      },
+      focusOn: { regions: Object.keys(MARGEN), animate: false },
+    });
+
+    setLegend('margen');
+
+    btnMargen.addEventListener('click', () => {
+      btnMargen.classList.add('active');
+      btnVolumen.classList.remove('active');
+      map.series.regions[0].scale = ['#FF6B5C', '#34D399'];
+      map.series.regions[0].setValues(MARGEN);
+      setLegend('margen');
+    });
+
+    btnVolumen.addEventListener('click', () => {
+      btnVolumen.classList.add('active');
+      btnMargen.classList.remove('active');
+      map.series.regions[0].scale = ['#1B2A52', '#4F7CFF'];
+      map.series.regions[0].setValues(VOLUMEN);
+      setLegend('volumen');
+    });
+  } catch (e) {
+    document.getElementById('map').innerHTML =
+      '<p class="map-error">No se pudo cargar el mapa (librería externa no disponible). Revisa tu conexión a internet y vuelve a abrir la página.</p>';
+    document.querySelector('.map-toggle').style.display = 'none';
+  }
 </script>
 </body>
 </html>

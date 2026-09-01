@@ -96,11 +96,31 @@
         <input type="range" id="tarifa" min="25" max="70" step="1" value="45" />
         <p class="slider-hint">Línea base del informe: €45/h</p>
 
+        <div class="slider-row" style="margin-top:18px;">
+          <span class="slider-label">Umbral de zona de atención</span>
+          <span class="slider-value" id="umbral-val">70%</span>
+        </div>
+        <input type="range" id="umbral" min="55" max="85" step="1" value="70" />
+        <p class="slider-hint">Ver memoria de cálculo abajo</p>
+
         <button class="reset-btn" id="reset-btn">Volver a la línea base</button>
       </div>
 
+      <div class="card" style="font-size:11.5px; line-height:1.6; color: var(--text-muted);">
+        <p class="titulo-card" style="margin-bottom:8px;">Memoria de cálculo — umbral</p>
+        <p style="margin:0 0 8px;">
+          Este umbral <b style="color:var(--text);">no es una política de Nodo</b>, es un punto de referencia editable.
+          El valor inicial (70%) se aproxima a la <b style="color:var(--text);">media menos una desviación estándar</b>
+          de los 12 márgenes observados (73.9% − 4.2 ≈ 69.7%), un criterio común para marcar valores por debajo de lo típico.
+        </p>
+        <p style="margin:0;">
+          Lo ideal es que la dirección de Nodo lo ajuste según su costo fijo real y utilidad objetivo — datos que no
+          existen en este dataset. Muévelo y observa cómo cambia el conteo de clientes en riesgo.
+        </p>
+      </div>
+
       <div class="card">
-        <p class="stat-label">Clientes en zona de atención (margen &lt; 70%)</p>
+        <p class="stat-label">Clientes en zona de atención (margen &lt; <span id="stat-riesgo-umbral">70</span>%)</p>
         <p class="stat-big" id="stat-riesgo">0 de 12</p>
         <div class="divider">
           <p class="stat-label">Margen promedio</p>
@@ -153,11 +173,14 @@
 
   const minutosInput = document.getElementById("minutos");
   const tarifaInput = document.getElementById("tarifa");
+  const umbralInput = document.getElementById("umbral");
   const minutosVal = document.getElementById("minutos-val");
   const tarifaVal = document.getElementById("tarifa-val");
+  const umbralVal = document.getElementById("umbral-val");
   const resetBtn = document.getElementById("reset-btn");
   const lista = document.getElementById("lista-clientes");
   const statRiesgo = document.getElementById("stat-riesgo");
+  const statRiesgoUmbral = document.getElementById("stat-riesgo-umbral");
   const statPromedio = document.getElementById("stat-promedio");
   const statCambios = document.getElementById("stat-cambios");
   const statCambiosText = document.getElementById("stat-cambios-text");
@@ -165,10 +188,13 @@
   function render() {
     const minutos = Number(minutosInput.value);
     const tarifa = Number(tarifaInput.value);
+    const umbral = Number(umbralInput.value) / 100;
     minutosVal.textContent = minutos + " min";
     tarifaVal.textContent = "€" + tarifa + "/h";
+    umbralVal.textContent = umbralInput.value + "%";
+    statRiesgoUmbral.textContent = umbralInput.value;
 
-    const esBase = minutos === BASE_MIN && tarifa === BASE_TARIFA;
+    const esBase = minutos === BASE_MIN && tarifa === BASE_TARIFA && Number(umbralInput.value) === 70;
     resetBtn.style.display = esBase ? "none" : "block";
 
     const clientes = CLIENTES_BASE.map(c => {
@@ -178,13 +204,13 @@
       const margenPct = (c.contrato - costo) / c.contrato;
 
       const margenBase = (c.contrato - c.horasBase * BASE_TARIFA) / c.contrato;
-      const tierBase = margenBase < 0.7 ? "atencion" : "sano";
-      const tierAhora = margenPct < 0.7 ? "atencion" : "sano";
+      const tierBase = margenBase < umbral ? "atencion" : "sano";
+      const tierAhora = margenPct < umbral ? "atencion" : "sano";
 
       return { ...c, costo, margenPct, tierAhora, cambioTier: tierBase !== tierAhora };
     }).sort((a, b) => a.margenPct - b.margenPct);
 
-    const enRiesgo = clientes.filter(c => c.margenPct < 0.7).length;
+    const enRiesgo = clientes.filter(c => c.margenPct < umbral).length;
     const promedio = clientes.reduce((s, c) => s + c.margenPct, 0) / clientes.length;
     const cambios = clientes.filter(c => c.cambioTier).length;
     const maxMargen = Math.max(...clientes.map(c => Math.abs(c.margenPct)), 0.01);
@@ -219,9 +245,11 @@
 
   minutosInput.addEventListener("input", render);
   tarifaInput.addEventListener("input", render);
+  umbralInput.addEventListener("input", render);
   resetBtn.addEventListener("click", () => {
     minutosInput.value = BASE_MIN;
     tarifaInput.value = BASE_TARIFA;
+    umbralInput.value = 70;
     render();
   });
 
