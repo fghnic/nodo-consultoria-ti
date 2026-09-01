@@ -43,6 +43,20 @@ no incluida en este repositorio) replica las tres herramientas con fórmulas
 nativas de Excel: los mismos supuestos son celdas editables, y los mismos
 cálculos se recalculan en vivo dentro del propio archivo.
 
+## Entregables oficiales del proyecto
+
+Los cuatro entregables que pide el proyecto integrador, ninguno incluido en
+este repositorio por tamaño o por tratarse de archivos de calificación:
+
+1. **Informe** (`.docx`, formato APA) — diagnóstico, diseño conceptual,
+   interpretación de datos y decisiones gerenciales.
+2. **Prototipo conceptual** — diagrama en `docs/diagrama_sistema.md` y las
+   tres herramientas interactivas de este repositorio.
+3. **Hoja de cálculo** (`.xlsx`) — dashboard, simulaciones y KPIs con
+   fórmulas nativas.
+4. **Presentación final** (`.pptx`) — 12 diapositivas con el diagnóstico,
+   la metodología, los hallazgos y las decisiones gerenciales.
+
 ## Fuente de datos y atribución
 
 Este proyecto usa como base el **Technical Support Dataset**:

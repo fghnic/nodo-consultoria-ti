@@ -15,6 +15,19 @@
   body { background: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, sans-serif; margin: 0; padding: 28px 32px; }
   .brand { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 600; }
   .subtitle { font-size: 13px; color: var(--text-faint); margin: 4px 0 0; max-width: 660px; line-height: 1.5; }
+  .nav { display: flex; gap: 6px; margin: 14px 0 4px; flex-wrap: wrap; }
+  .nav a {
+    font-size: 12.5px; font-weight: 500; padding: 7px 14px; border-radius: 8px;
+    color: var(--text-muted); text-decoration: none; border: 1px solid var(--border);
+  }
+  .nav a.current { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .nav a:hover:not(.current) { color: var(--text); border-color: var(--text-faint); }
+  .callout {
+    background: var(--coral-soft); border: 1px solid #4A2E2A; border-radius: 12px;
+    padding: 14px 18px; font-size: 13.5px; color: #FFB4A8; margin-top: 18px; max-width: 800px; line-height: 1.5;
+  }
+  .callout b { color: #FFD9D2; }
+  .stat-note { font-size: 11px; color: var(--text-faint); margin: 4px 0 0; line-height: 1.4; }
 
   .layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; margin-top: 24px; }
   @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
@@ -37,7 +50,8 @@
   .titulo-panel { font-size: 14px; font-weight: 600; color: var(--text); margin: 0 0 4px; }
   .panel-hint { font-size: 12px; color: var(--text-faint); margin: 0 0 16px; }
   .hist { display: flex; align-items: flex-end; gap: 3px; height: 220px; border-bottom: 1px solid var(--border-soft); padding-bottom: 2px; }
-  .bar-wrap { flex: 1; display: flex; align-items: flex-end; height: 100%; position: relative; }
+  .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; position: relative; cursor: default; }
+  .bar-count { font-size: 9.5px; color: var(--text-faint); margin-bottom: 3px; font-variant-numeric: tabular-nums; }
   .bar { width: 100%; border-radius: 3px 3px 0 0; background: var(--blue); transition: background 0.15s; }
   .bar.alerta { background: var(--coral); }
   .axis { display: flex; justify-content: space-between; margin-top: 6px; }
@@ -48,8 +62,18 @@
 </style>
 </head>
 <body>
-  <div class="brand">Umbral de alerta de riesgo de SLA</div>
-  <p class="subtitle">Nodo Consultoría TI — cada barra es la fracción del tiempo prometido que un ticket ya resuelto tardó en cerrarse. 1.0 significa que se usó exactamente el tiempo comprometido; más de 1.0 es incumplimiento. Mueve el umbral para calibrar en qué punto el sistema debería avisar antes de que se incumpla.</p>
+  <div class="brand">Alerta temprana de incumplimiento de SLA</div>
+  <nav class="nav">
+    <a href="index.html">Panel general</a>
+    <a href="simulador-margenes.html">Márgenes por cliente</a>
+    <a href="detector-anomalias-tickets.html">Anomalías en tickets</a>
+    <a href="umbral-sla.html" class="current">Alerta de SLA</a>
+  </nav>
+  <p class="subtitle">Hoy, cuando un ticket incumple lo prometido, nadie se entera hasta que ya pasó. Define en qué momento el sistema debería avisar, antes de que sea tarde para actuar.</p>
+
+  <div class="callout" id="callout">
+    Sin ningún sistema de alerta, <b>19.1% de los tickets</b> ya resueltos incumplieron el tiempo prometido, sin que nadie lo supiera a tiempo.
+  </div>
 
   <div class="layout">
     <div>
@@ -57,28 +81,26 @@
         <p class="titulo-card">Umbral de alerta temprana</p>
         <div class="control-row"><span class="control-label">% del tiempo prometido</span><span class="control-value" id="umbral-val">80%</span></div>
         <input type="range" id="umbral" min="0.5" max="1.0" step="0.05" value="0.8" />
-        <p class="control-hint">La Fase 2 del proyecto propuso 80% como punto de partida</p>
+        <p class="control-hint">80% es un buen punto de partida: avisa antes de llegar al límite, sin generar alertas demasiado pronto</p>
       </div>
 
       <div class="card">
-        <p class="stat-label">Tickets que activarían la alerta</p>
+        <p class="stat-label">Tickets que recibirían alerta con este umbral</p>
         <p class="stat-big" id="stat-alerta" style="color: var(--coral);">—</p>
         <div class="divider">
-          <p class="stat-label">De esos, terminaron incumpliendo el SLA</p>
+          <p class="stat-label">Qué tan confiable es esa alerta</p>
           <p class="stat-mid" id="stat-incumplieron">—</p>
-        </div>
-        <div class="divider">
-          <p class="stat-label">Incumplimiento total (referencia fija)</p>
-          <p class="stat-mid" id="stat-total" style="color: var(--text-muted);">19.1%</p>
+          <p class="stat-note" id="stat-incumplieron-note"></p>
         </div>
       </div>
     </div>
 
     <div class="panel">
-      <p class="titulo-panel">Distribución de tickets resueltos, por fracción del tiempo prometido usado</p>
-      <p class="panel-hint" id="panel-hint">1,912 tickets con datos completos de resolución</p>
+      <p class="titulo-panel">Cuántos tickets caen en cada nivel de retraso</p>
+      <p class="panel-hint" id="panel-hint">Con base en 1,912 tickets ya resueltos</p>
       <div class="hist" id="hist"></div>
       <div class="axis"><span>0%</span><span>50%</span><span>100%</span><span>150%</span><span>200%+</span></div>
+      <p class="stat-note" style="margin-top:10px;">La última barra (200%+) no es una franja de 10 puntos como las demás: agrupa <b style="color:var(--text);">todos</b> los tickets que tardaron el doble del tiempo prometido o más, algunos hasta casi 6 veces más. Por eso concentra tantos casos en una sola barra — son los retrasos más graves del año.</p>
       <div class="legend">
         <div class="legend-item"><span class="dot" style="background: var(--blue);"></span>Dentro del umbral</div>
         <div class="legend-item"><span class="dot" style="background: var(--coral);"></span>Activaría la alerta</div>
@@ -102,11 +124,18 @@ const maxBin = Math.max(...bins);
 const histEl = document.getElementById('hist');
 histEl.innerHTML = bins.map((count, i) => {
   const heightPct = maxBin > 0 ? (count / maxBin) * 100 : 0;
-  return `<div class="bar-wrap"><div class="bar" data-idx="${i}" style="height:${heightPct}%;"></div></div>`;
+  const rangoIni = Math.round(i * BIN_SIZE * 100);
+  const rango = i === NUM_BINS ? `${rangoIni}% o más` : `${rangoIni}%–${rangoIni + 10}%`;
+  return `<div class="bar-wrap" title="${count} tickets tardaron ${rango} del tiempo prometido">
+            <span class="bar-count">${count}</span>
+            <div class="bar" data-idx="${i}" style="height:${heightPct}%;"></div>
+          </div>`;
 }).join('');
 
 const totalIncumplidos = FRACCIONES.filter(f => f >= 1.0).length;
-document.getElementById('stat-total').textContent = ((totalIncumplidos / FRACCIONES.length) * 100).toFixed(1) + '%';
+const pctIncumplidoTotal = ((totalIncumplidos / FRACCIONES.length) * 100).toFixed(1);
+document.getElementById('callout').innerHTML =
+  `Sin ningún sistema de alerta, <b>${pctIncumplidoTotal}% de los tickets</b> ya resueltos incumplieron el tiempo prometido, sin que nadie lo supiera a tiempo.`;
 
 function render() {
   const umbral = Number(document.getElementById('umbral').value);
@@ -114,9 +143,12 @@ function render() {
 
   const enAlerta = FRACCIONES.filter(f => f >= umbral);
   const incumplieronDeEsos = enAlerta.filter(f => f >= 1.0).length;
+  const precision = enAlerta.length ? ((incumplieronDeEsos / enAlerta.length) * 100) : 0;
 
-  document.getElementById('stat-alerta').textContent = enAlerta.length + ' (' + ((enAlerta.length / FRACCIONES.length) * 100).toFixed(1) + '%)';
-  document.getElementById('stat-incumplieron').textContent = incumplieronDeEsos + ' de ' + enAlerta.length + ' (' + (enAlerta.length ? ((incumplieronDeEsos / enAlerta.length) * 100).toFixed(1) : '0') + '%)';
+  document.getElementById('stat-alerta').textContent = enAlerta.length + ' (' + ((enAlerta.length / FRACCIONES.length) * 100).toFixed(1) + '% de los tickets)';
+  document.getElementById('stat-incumplieron').textContent = precision.toFixed(1) + '%';
+  document.getElementById('stat-incumplieron-note').textContent =
+    `De cada 100 alertas con este umbral, ${precision.toFixed(0)} sí terminan en incumplimiento real. Umbral más alto = alertas más certeras, pero avisan más tarde.`;
 
   const umbralBinIdx = Math.floor(umbral / BIN_SIZE);
   document.querySelectorAll('.bar').forEach(bar => {
