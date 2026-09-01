@@ -4,9 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Nodo Consultoría TI — Herramientas interactivas</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsvectormap/1.4.3/css/jsvectormap.min.css" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsvectormap/1.4.3/js/jsvectormap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsvectormap/1.4.3/maps/world.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
   :root {
@@ -76,7 +73,18 @@
   .map-toggle { display: flex; gap: 4px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 4px; height: fit-content; }
   .map-toggle button { font-size: 12.5px; font-weight: 500; padding: 7px 14px; border-radius: 7px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; }
   .map-toggle button.active { background: var(--blue); color: #fff; }
-  #map { width: 100%; height: 420px; }
+  #map { width: 100%; height: 420px; position: relative; }
+  #map svg { width: 100%; height: 100%; }
+  .map-country-dot { cursor: pointer; stroke: #0F1620; stroke-width: 1.5; transition: r 0.15s; }
+  .map-country-dot:hover { stroke: #EDF1F6; }
+  .map-country-label { font-family: 'Inter', sans-serif; font-size: 10px; fill: var(--text-muted); pointer-events: none; }
+  .map-country-value { font-family: 'Inter', sans-serif; font-size: 9.5px; font-weight: 700; fill: var(--text); pointer-events: none; }
+  .map-grid-line { stroke: #212C3C; stroke-width: 1; }
+  .map-tooltip {
+    position: absolute; background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 12px; font-size: 12px; color: var(--text); pointer-events: none; opacity: 0;
+    transition: opacity 0.1s; transform: translate(-50%, -115%); white-space: nowrap; z-index: 10;
+  }
   .map-legend { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 11.5px; color: var(--text-faint); }
   .map-legend .bar { flex: 1; max-width: 220px; height: 8px; border-radius: 4px; }
   .map-error { color: var(--text-faint); font-size: 13px; text-align: center; padding: 60px 20px; }
@@ -148,14 +156,14 @@
       <div class="map-header">
         <div>
           <p class="map-title">Mapa de clientes por país</p>
-          <p class="map-desc">Los 12 clientes están construidos a partir del país de origen de cada ticket en el dataset real. Cambia la vista para leer rendimiento actual u oportunidad de negocio.</p>
+          <p class="map-desc">Los 12 clientes están construidos a partir del país de origen de cada ticket en el dataset real. Cada punto está ubicado en las coordenadas reales aproximadas de su país (no son fronteras exactas). Cambia la vista para leer rendimiento actual u oportunidad de negocio.</p>
         </div>
         <div class="map-toggle">
           <button id="btn-margen" class="active">Margen (rendimiento)</button>
           <button id="btn-volumen">Volumen (oportunidad)</button>
         </div>
       </div>
-      <div id="map"></div>
+      <div id="map"><div class="map-tooltip" id="map-tooltip"></div></div>
       <div class="map-legend">
         <span id="legend-min">—</span>
         <div class="bar" id="legend-bar"></div>
@@ -199,76 +207,106 @@
 
   const MARGEN = { DE: 76.0, IT: 75.7, PL: 66.5, GB: 78.3, AT: 78.0, GR: 72.1, FR: 78.3, ES: 73.4, SI: 71.4, CZ: 69.8, IE: 78.4, BG: 68.7 };
   const VOLUMEN = { DE: 306, IT: 303, PL: 287, GB: 283, AT: 144, GR: 144, FR: 158, ES: 133, SI: 159, CZ: 134, IE: 148, BG: 131 };
+  const NOMBRES = { DE: 'Alemania', IT: 'Italia', PL: 'Polonia', GB: 'Reino Unido', AT: 'Austria', GR: 'Grecia', FR: 'Francia', ES: 'España', SI: 'Eslovenia', CZ: 'Rep. Checa', IE: 'Irlanda', BG: 'Bulgaria' };
+  const CLIENTES_NOM = { DE: 'Rheinbrück Industries', IT: 'Lombardia Software Group', PL: 'Wisła Digital Solutions', GB: 'Thames Analytics Ltd', AT: 'Alpen Tech Consulting', GR: 'Aegean Systems SA', FR: 'Seine Informatique', ES: 'Ibérica Data Solutions', SI: 'Triglav Software', CZ: 'Vltava Tech s.r.o.', IE: 'Shannon Digital Services', BG: 'Sofia Cloud Systems' };
+  // Coordenadas reales aproximadas (lat, lon) del centro de cada país
+  const COORDS = {
+    DE: [51.0, 10.4], IT: [42.8, 12.6], PL: [51.9, 19.1], GB: [54.5, -3.4],
+    AT: [47.5, 14.5], GR: [39.3, 22.0], FR: [46.6, 2.5], ES: [40.2, -3.7],
+    SI: [46.1, 14.8], CZ: [49.8, 15.5], IE: [53.2, -8.0], BG: [42.7, 25.5],
+  };
+
+  const VIEW_W = 760, VIEW_H = 380;
+  const LON_MIN = -11, LON_MAX = 29, LAT_MIN = 34, LAT_MAX = 61;
+  function project(lat, lon) {
+    const x = ((lon - LON_MIN) / (LON_MAX - LON_MIN)) * VIEW_W;
+    const y = ((LAT_MAX - lat) / (LAT_MAX - LAT_MIN)) * VIEW_H;
+    return [x, y];
+  }
+
+  function hexToRgb(hex) {
+    const n = parseInt(hex.replace('#', ''), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function interpolateColor(c1, c2, t) {
+    const a = hexToRgb(c1), b = hexToRgb(c2);
+    const r = Math.round(a[0] + (b[0] - a[0]) * t);
+    const g = Math.round(a[1] + (b[1] - a[1]) * t);
+    const bl = Math.round(a[2] + (b[2] - a[2]) * t);
+    return `rgb(${r},${g},${bl})`;
+  }
 
   const btnMargen = document.getElementById('btn-margen');
   const btnVolumen = document.getElementById('btn-volumen');
   const legendMin = document.getElementById('legend-min');
   const legendMax = document.getElementById('legend-max');
   const legendBar = document.getElementById('legend-bar');
+  const mapEl = document.getElementById('map');
+  const tooltip = document.getElementById('map-tooltip');
 
-  function setLegend(vista) {
+  function buildMap(vista) {
+    const data = vista === 'margen' ? MARGEN : VOLUMEN;
+    const colors = vista === 'margen' ? ['#FF6B5C', '#34D399'] : ['#1B2A52', '#4F7CFF'];
+    const values = Object.values(data);
+    const min = Math.min(...values), max = Math.max(...values);
+
     if (vista === 'margen') {
       legendMin.textContent = '66.5% (Wisła)';
       legendMax.textContent = '78.4% (Shannon)';
-      legendBar.style.background = 'linear-gradient(90deg, #FF6B5C, #34D399)';
     } else {
       legendMin.textContent = '131 tickets (Bulgaria)';
       legendMax.textContent = '306 tickets (Alemania)';
-      legendBar.style.background = 'linear-gradient(90deg, #1B2A52, #4F7CFF)';
     }
+    legendBar.style.background = `linear-gradient(90deg, ${colors[0]}, ${colors[1]})`;
+
+    let svg = `<svg viewBox="0 0 ${VIEW_W} ${VIEW_H}" preserveAspectRatio="xMidYMid meet">`;
+    // líneas de referencia sutiles (no son fronteras reales, solo guía visual)
+    for (let gx = 0; gx <= VIEW_W; gx += VIEW_W / 8) {
+      svg += `<line class="map-grid-line" x1="${gx}" y1="0" x2="${gx}" y2="${VIEW_H}" />`;
+    }
+    for (let gy = 0; gy <= VIEW_H; gy += VIEW_H / 6) {
+      svg += `<line class="map-grid-line" x1="0" y1="${gy}" x2="${VIEW_W}" y2="${gy}" />`;
+    }
+
+    Object.entries(COORDS).forEach(([code, [lat, lon]]) => {
+      const [x, y] = project(lat, lon);
+      const val = data[code];
+      const t = (val - min) / (max - min || 1);
+      const color = interpolateColor(colors[0], colors[1], t);
+      const r = vista === 'volumen' ? 10 + (val - min) / (max - min || 1) * 12 : 16;
+      svg += `<circle class="map-country-dot" data-code="${code}" cx="${x}" cy="${y}" r="${r}" fill="${color}" />`;
+      svg += `<text class="map-country-label" x="${x}" y="${y - r - 6}" text-anchor="middle">${NOMBRES[code]}</text>`;
+      svg += `<text class="map-country-value" x="${x}" y="${y + 3.5}" text-anchor="middle">${vista === 'margen' ? val.toFixed(0) + '%' : val}</text>`;
+    });
+    svg += '</svg>';
+    mapEl.innerHTML = svg + '<div class="map-tooltip" id="map-tooltip"></div>';
+
+    const newTooltip = document.getElementById('map-tooltip');
+    mapEl.querySelectorAll('.map-country-dot').forEach(dot => {
+      dot.addEventListener('mousemove', (e) => {
+        const code = dot.dataset.code;
+        const rect = mapEl.getBoundingClientRect();
+        newTooltip.style.left = (e.clientX - rect.left) + 'px';
+        newTooltip.style.top = (e.clientY - rect.top) + 'px';
+        newTooltip.style.opacity = '1';
+        newTooltip.innerHTML = `<b>${CLIENTES_NOM[code]}</b><br/>${NOMBRES[code]} · ${MARGEN[code].toFixed(1)}% margen · ${VOLUMEN[code]} tickets`;
+      });
+      dot.addEventListener('mouseleave', () => { newTooltip.style.opacity = '0'; });
+    });
   }
 
-  try {
-    if (typeof jsVectorMap === 'undefined') throw new Error('jsVectorMap no cargó');
+  buildMap('margen');
 
-    const map = new jsVectorMap({
-      selector: '#map',
-      map: 'world',
-      zoomButtons: false,
-      zoomOnScroll: false,
-      backgroundColor: 'transparent',
-      regionStyle: {
-        initial: { fill: '#212C3C', stroke: '#0F1620', strokeWidth: 0.5 },
-        hover: { fillOpacity: 0.85 },
-      },
-      series: {
-        regions: [{
-          attribute: 'fill',
-          values: MARGEN,
-          scale: ['#FF6B5C', '#34D399'],
-          normalizeFunction: 'linear',
-        }],
-      },
-      onRegionTooltipShow: function (event, tooltip, code) {
-        if (MARGEN[code] !== undefined) {
-          tooltip.text(tooltip.text() + ': ' + MARGEN[code].toFixed(1) + '% margen · ' + VOLUMEN[code] + ' tickets', true);
-        }
-      },
-      focusOn: { regions: Object.keys(MARGEN), animate: false },
-    });
-
-    setLegend('margen');
-
-    btnMargen.addEventListener('click', () => {
-      btnMargen.classList.add('active');
-      btnVolumen.classList.remove('active');
-      map.series.regions[0].scale = ['#FF6B5C', '#34D399'];
-      map.series.regions[0].setValues(MARGEN);
-      setLegend('margen');
-    });
-
-    btnVolumen.addEventListener('click', () => {
-      btnVolumen.classList.add('active');
-      btnMargen.classList.remove('active');
-      map.series.regions[0].scale = ['#1B2A52', '#4F7CFF'];
-      map.series.regions[0].setValues(VOLUMEN);
-      setLegend('volumen');
-    });
-  } catch (e) {
-    document.getElementById('map').innerHTML =
-      '<p class="map-error">No se pudo cargar el mapa (librería externa no disponible). Revisa tu conexión a internet y vuelve a abrir la página.</p>';
-    document.querySelector('.map-toggle').style.display = 'none';
-  }
+  btnMargen.addEventListener('click', () => {
+    btnMargen.classList.add('active');
+    btnVolumen.classList.remove('active');
+    buildMap('margen');
+  });
+  btnVolumen.addEventListener('click', () => {
+    btnVolumen.classList.add('active');
+    btnMargen.classList.remove('active');
+    buildMap('volumen');
+  });
 </script>
 </body>
 </html>
