@@ -9,13 +9,62 @@
   :root {
     --bg: #0F1620; --panel: #161F2C; --card: #1B2534; --border: #2A3648;
     --text: #EDF1F6; --text-muted: #8B97A8; --text-faint: #5C6A7E;
-    --blue: #4F7CFF; --coral: #FF6B5C; --green: #34D399;
+    --blue: #4F7CFF; --coral: #FF6B5C; --green: #34D399; --amber: #F5B84F;
   }
   * { box-sizing: border-box; }
-  body { background: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, sans-serif; margin: 0; padding: 48px 32px; }
-  .wrap { max-width: 760px; margin: 0 auto; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, sans-serif; margin: 0; padding: 48px 32px 64px; }
+  .wrap { max-width: 900px; margin: 0 auto; }
   .brand { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 600; }
-  .subtitle { font-size: 14px; color: var(--text-muted); margin: 8px 0 40px; max-width: 560px; line-height: 1.6; }
+  .subtitle { font-size: 14px; color: var(--text-muted); margin: 8px 0 32px; max-width: 560px; line-height: 1.6; }
+
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-auto-rows: minmax(90px, auto);
+    gap: 14px;
+    margin-bottom: 44px;
+  }
+  .tile { border-radius: 20px; padding: 26px; position: relative; overflow: hidden; }
+  .tile-primary {
+    grid-column: span 6; grid-row: span 2;
+    background: linear-gradient(155deg, #1B2A52 0%, #101826 65%);
+    border: 1px solid #2C3A5C;
+    display: flex; flex-direction: column; justify-content: space-between;
+    min-height: 220px;
+  }
+  .tile-primary::before {
+    content: ""; position: absolute; inset: 0;
+    background: repeating-linear-gradient(45deg, #ffffff08 0px, #ffffff08 1px, transparent 1px, transparent 12px);
+    mask-image: radial-gradient(ellipse 70% 60% at 100% 0%, #000 60%, transparent 100%);
+    pointer-events: none;
+  }
+  .eyebrow { display: inline-block; padding: 4px 12px; background: #ffffff14; border-radius: 20px; font-size: 10.5px; font-weight: 600; color: #B9CBFF; letter-spacing: 0.04em; margin-bottom: 18px; width: fit-content; }
+  .tile-primary h1 { font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 600; margin: 0 0 8px; color: var(--text); }
+  .tile-primary .desc { font-size: 13.5px; color: var(--text-muted); max-width: 420px; line-height: 1.6; margin: 0; }
+  .credits { display: flex; gap: 32px; margin-top: 22px; flex-wrap: wrap; position: relative; }
+  .credits div p:first-child { font-size: 10.5px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 3px; }
+  .credits div p:last-child { font-size: 13.5px; color: var(--text); margin: 0; font-weight: 500; }
+
+  .tile-sparkline { grid-column: span 4; background: var(--card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .tile-sparkline .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-faint); margin: 0 0 6px; }
+  .tile-sparkline .value { font-size: 28px; font-weight: 700; color: var(--text); margin: 0; }
+  .spark { display: flex; align-items: flex-end; gap: 3px; height: 46px; }
+  .spark div { width: 6px; background: var(--blue); border-radius: 3px; }
+
+  .tile-num { grid-column: span 1; background: var(--card); border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .tile-num .value { font-size: 26px; font-weight: 700; color: var(--text); margin: 0; }
+  .tile-num .label { font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--text-faint); letter-spacing: 0.03em; margin: 4px 0 0; }
+
+  .tile-tools { grid-column: span 1; background: var(--card); border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .tile-tools .value { font-size: 26px; font-weight: 700; color: var(--green); margin: 0; }
+  .tile-tools .label { font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--text-faint); letter-spacing: 0.03em; margin: 4px 0 0; }
+
+  @media (max-width: 720px) {
+    .tile-primary, .tile-sparkline { grid-column: span 6; }
+    .tile-num, .tile-tools { grid-column: span 3; }
+  }
+
+  h2.section-title { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 600; color: var(--text-muted); margin: 0 0 14px; }
   .cards { display: flex; flex-direction: column; gap: 14px; }
   a.card {
     display: block; background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
@@ -37,6 +86,49 @@
     <div class="brand">Nodo Consultoría TI</div>
     <p class="subtitle">Proyecto Integrador — Dirección de Empresas (IMESP). Tres herramientas interactivas que ponen a prueba, con datos reales, las decisiones gerenciales del informe.</p>
 
+    <div class="bento">
+      <div class="tile tile-primary">
+        <div>
+          <span class="eyebrow">Proyecto integrador</span>
+          <h1>Sistema de información para toma de decisiones</h1>
+          <p class="desc">Diseño conceptual de un sistema de información para una PyME de consultoría de TI, con datos reales de soporte técnico adaptados al caso y tres herramientas de simulación gerencial.</p>
+        </div>
+        <div class="credits">
+          <div>
+            <p>Alumno</p>
+            <p>Francisco Gabriel Herrera Nicolás</p>
+          </div>
+          <div>
+            <p>Docente</p>
+            <p>Mtra. Rosalba Guzmán Rodríguez</p>
+          </div>
+          <div>
+            <p>Materia</p>
+            <p>Dirección de Empresas</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="tile tile-sparkline">
+        <div>
+          <p class="label">Volumen de tickets, primeras 2 semanas</p>
+          <p class="value">2,330 <span style="font-size:13px; color:var(--text-faint); font-weight:500;">tickets/año</span></p>
+        </div>
+        <div class="spark" id="spark"></div>
+      </div>
+
+      <div class="tile tile-num">
+        <p class="value" style="color:var(--amber);">73.9%</p>
+        <p class="label">Margen promedio</p>
+      </div>
+
+      <div class="tile tile-tools">
+        <p class="value">3</p>
+        <p class="label">Herramientas</p>
+      </div>
+    </div>
+
+    <h2 class="section-title">Herramientas interactivas</h2>
     <div class="cards">
       <a class="card" href="simulador-margenes.html">
         <span class="tag blue">Rentabilidad</span>
@@ -62,5 +154,13 @@
       Código y datos derivados en <a href="https://github.com/fghnic/nodo-consultoria-ti" target="_blank" rel="noopener noreferrer">github.com/fghnic/nodo-consultoria-ti</a>.
     </footer>
   </div>
+
+<script>
+  const dias = [3, 9, 9, 6, 6, 5, 5, 11, 10, 8, 2, 15, 1, 4];
+  const max = Math.max(...dias);
+  document.getElementById('spark').innerHTML = dias.map(v =>
+    `<div style="height:${Math.max(8, (v / max) * 100)}%;"></div>`
+  ).join('');
+</script>
 </body>
 </html>
