@@ -27,6 +27,13 @@
     border: 1px solid var(--border); border-radius: 20px; padding: 7px 14px; cursor: pointer;
   }
   .theme-toggle:hover { color: var(--text); }
+  .nav { display: flex; gap: 6px; margin: 16px 0 10px; flex-wrap: wrap; }
+  .nav a {
+    font-size: 12.5px; font-weight: 500; padding: 7px 14px; border-radius: 8px;
+    color: var(--text-muted); text-decoration: none; border: 1px solid var(--border);
+  }
+  .nav a.current { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .nav a:hover:not(.current) { color: var(--text); border-color: var(--text-faint); }
   .brand { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 600; }
   .subtitle { font-size: 14px; color: var(--text-muted); margin: 8px 0 32px; max-width: 560px; line-height: 1.6; }
 
@@ -125,14 +132,20 @@
       <div class="brand">Nodo Consultoría TI</div>
       <button class="theme-toggle" id="theme-toggle">Modo claro</button>
     </div>
-    <p class="subtitle">Proyecto Integrador — Dirección de Empresas (IMESP). Tres herramientas interactivas que ponen a prueba, con datos reales, las decisiones gerenciales del informe.</p>
+    <nav class="nav">
+      <a href="index.html" class="current">Panel general</a>
+      <a href="simulador-margenes.html">Márgenes por cliente</a>
+      <a href="detector-anomalias-tickets.html">Anomalías en tickets</a>
+      <a href="umbral-sla.html">Alerta de SLA</a>
+    </nav>
+    <p class="subtitle">Un solo lugar para ver, en cualquier momento, si el negocio es rentable, si el servicio cumple lo prometido, y dónde está creciendo la operación.</p>
 
     <div class="bento">
       <div class="tile tile-primary">
         <div>
-          <span class="eyebrow">Proyecto integrador</span>
-          <h1>Sistema de información para toma de decisiones</h1>
-          <p class="desc">Diseño conceptual de un sistema de información para una PyME de consultoría de TI, con datos reales de soporte técnico adaptados al caso y tres herramientas de simulación gerencial.</p>
+          <span class="eyebrow">Dirección general</span>
+          <h1>Nodo Consultoría TI</h1>
+          <p class="desc">Consolida la rentabilidad por cliente, el cumplimiento de servicio y la evolución del negocio en un solo panel, con datos reales de 2,330 tickets de soporte. Explora los tres módulos de abajo para poner a prueba una decisión antes de tomarla.</p>
         </div>
         <div class="credits">
           <div>
@@ -172,12 +185,12 @@
     <div class="map-section">
       <div class="map-header">
         <div>
-          <p class="map-title">Mapa de clientes por país</p>
-          <p class="map-desc">Los 12 clientes están construidos a partir del país de origen de cada ticket en el dataset real. Cada punto está ubicado en las coordenadas reales aproximadas de su país (no son fronteras exactas). Cambia la vista para leer rendimiento actual u oportunidad de negocio.</p>
+          <p class="map-title">Dónde está el negocio</p>
+          <p class="map-desc">Un vistazo a qué mercados sostienen la rentabilidad hoy y cuáles representan la mayor oportunidad de crecimiento, para enfocar ahí a comercial y a soporte.</p>
         </div>
         <div class="map-toggle">
-          <button id="btn-margen" class="active">Margen (rendimiento)</button>
-          <button id="btn-volumen">Volumen (oportunidad)</button>
+          <button id="btn-margen" class="active">Rendimiento</button>
+          <button id="btn-volumen">Oportunidad</button>
         </div>
       </div>
       <div id="map"><div class="map-tooltip" id="map-tooltip"></div></div>
@@ -193,19 +206,19 @@
       <a class="card" href="simulador-margenes.html">
         <span class="tag blue">Rentabilidad</span>
         <p class="card-title">Simulador de sensibilidad de márgenes</p>
-        <p class="card-desc">Ajusta los supuestos de costo interno (minutos por interacción, tarifa por hora) y observa en vivo qué tan sólida es la conclusión sobre qué cliente es menos rentable.</p>
+        <p class="card-desc">Ajusta los supuestos de costo y comprueba en vivo si la decisión sobre qué cliente es menos rentable se sostiene.</p>
       </a>
 
       <a class="card" href="detector-anomalias-tickets.html">
         <span class="tag coral">Operación</span>
         <p class="card-title">Detector de anomalías en volumen de tickets</p>
-        <p class="card-desc">Media móvil y z-score sobre los 363 días de tickets de 2023, para marcar picos estadísticamente inusuales por revisar.</p>
+        <p class="card-desc">Marca los días con actividad de soporte fuera de lo normal, para investigar la causa antes de que afecte el margen.</p>
       </a>
 
       <a class="card" href="umbral-sla.html">
         <span class="tag green">Servicio</span>
         <p class="card-title">Umbral de alerta de riesgo de SLA</p>
-        <p class="card-desc">Calibra en qué punto del tiempo prometido el sistema debería avisar, contra los 1,912 tickets resueltos reales.</p>
+        <p class="card-desc">Calibra en qué momento avisar antes de que un ticket incumpla lo prometido al cliente.</p>
       </a>
     </div>
 
@@ -253,7 +266,11 @@
     return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   }
 
-  const RAMP = ['#AFC3FF', '#1B2A52']; // una sola rampa: azul claro (bajo) a azul oscuro (alto)
+  const RAMP = ['#FF6B5C', '#F5B84F', '#34D399']; // semáforo: rojo (bajo) → amarillo → verde (alto), para ambas vistas
+  function rampColor(t) {
+    if (t <= 0.5) return interpolateColor(RAMP[0], RAMP[1], t / 0.5);
+    return interpolateColor(RAMP[1], RAMP[2], (t - 0.5) / 0.5);
+  }
 
   const btnMargen = document.getElementById('btn-margen');
   const btnVolumen = document.getElementById('btn-volumen');
@@ -274,7 +291,7 @@
       legendMin.textContent = '131 tickets (Bulgaria)';
       legendMax.textContent = '306 tickets (Alemania)';
     }
-    legendBar.style.background = `linear-gradient(90deg, ${RAMP[0]}, ${RAMP[1]})`;
+    legendBar.style.background = `linear-gradient(90deg, ${RAMP[0]}, ${RAMP[1]}, ${RAMP[2]})`;
 
     let svg = `<svg viewBox="0 0 ${VIEW_W} ${VIEW_H}" preserveAspectRatio="xMidYMid meet">`;
     svg += `<path class="map-bg-country" d="${MAP_BG_PATH}" />`;
@@ -282,7 +299,7 @@
     Object.entries(MAP_TARGET_PATHS).forEach(([code, d]) => {
       const val = data[code];
       const t = (val - min) / (max - min || 1);
-      const color = interpolateColor(RAMP[0], RAMP[1], t);
+      const color = rampColor(t);
       svg += `<path class="map-target-country" data-code="${code}" d="${d}" fill="${color}" />`;
     });
 

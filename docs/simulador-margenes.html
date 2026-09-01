@@ -32,6 +32,13 @@
   }
   .brand { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 600; }
   .subtitle { font-size: 13px; color: var(--text-faint); margin: 4px 0 0; }
+  .nav { display: flex; gap: 6px; margin: 14px 0 4px; flex-wrap: wrap; }
+  .nav a {
+    font-size: 12.5px; font-weight: 500; padding: 7px 14px; border-radius: 8px;
+    color: var(--text-muted); text-decoration: none; border: 1px solid var(--border);
+  }
+  .nav a.current { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .nav a:hover:not(.current) { color: var(--text); border-color: var(--text-faint); }
   .layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; margin-top: 24px; }
   @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
 
@@ -74,8 +81,14 @@
 </head>
 <body>
 
-  <div class="brand">Simulador de sensibilidad de márgenes</div>
-  <p class="subtitle">Nodo Consultoría TI — prueba qué tan sólida es la rentabilidad por cliente frente a los supuestos usados en el análisis</p>
+  <div class="brand">Simulador de márgenes por cliente</div>
+  <nav class="nav">
+    <a href="index.html">Panel general</a>
+    <a href="simulador-margenes.html" class="current">Márgenes por cliente</a>
+    <a href="detector-anomalias-tickets.html">Anomalías en tickets</a>
+    <a href="umbral-sla.html">Alerta de SLA</a>
+  </nav>
+  <p class="subtitle">Antes de negociar un contrato o dar de baja a un cliente, comprueba si la decisión se sostiene bajo distintos supuestos de costo.</p>
 
   <div class="layout">
     <div class="stack">
