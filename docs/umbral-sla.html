@@ -50,7 +50,8 @@
   .titulo-panel { font-size: 14px; font-weight: 600; color: var(--text); margin: 0 0 4px; }
   .panel-hint { font-size: 12px; color: var(--text-faint); margin: 0 0 16px; }
   .hist { display: flex; align-items: flex-end; gap: 3px; height: 220px; border-bottom: 1px solid var(--border-soft); padding-bottom: 2px; }
-  .bar-wrap { flex: 1; display: flex; align-items: flex-end; height: 100%; position: relative; }
+  .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; position: relative; cursor: default; }
+  .bar-count { font-size: 9.5px; color: var(--text-faint); margin-bottom: 3px; font-variant-numeric: tabular-nums; }
   .bar { width: 100%; border-radius: 3px 3px 0 0; background: var(--blue); transition: background 0.15s; }
   .bar.alerta { background: var(--coral); }
   .axis { display: flex; justify-content: space-between; margin-top: 6px; }
@@ -99,6 +100,7 @@
       <p class="panel-hint" id="panel-hint">Con base en 1,912 tickets ya resueltos</p>
       <div class="hist" id="hist"></div>
       <div class="axis"><span>0%</span><span>50%</span><span>100%</span><span>150%</span><span>200%+</span></div>
+      <p class="stat-note" style="margin-top:10px;">La última barra (200%+) no es una franja de 10 puntos como las demás: agrupa <b style="color:var(--text);">todos</b> los tickets que tardaron el doble del tiempo prometido o más, algunos hasta casi 6 veces más. Por eso concentra tantos casos en una sola barra — son los retrasos más graves del año.</p>
       <div class="legend">
         <div class="legend-item"><span class="dot" style="background: var(--blue);"></span>Dentro del umbral</div>
         <div class="legend-item"><span class="dot" style="background: var(--coral);"></span>Activaría la alerta</div>
@@ -122,7 +124,12 @@ const maxBin = Math.max(...bins);
 const histEl = document.getElementById('hist');
 histEl.innerHTML = bins.map((count, i) => {
   const heightPct = maxBin > 0 ? (count / maxBin) * 100 : 0;
-  return `<div class="bar-wrap"><div class="bar" data-idx="${i}" style="height:${heightPct}%;"></div></div>`;
+  const rangoIni = Math.round(i * BIN_SIZE * 100);
+  const rango = i === NUM_BINS ? `${rangoIni}% o más` : `${rangoIni}%–${rangoIni + 10}%`;
+  return `<div class="bar-wrap" title="${count} tickets tardaron ${rango} del tiempo prometido">
+            <span class="bar-count">${count}</span>
+            <div class="bar" data-idx="${i}" style="height:${heightPct}%;"></div>
+          </div>`;
 }).join('');
 
 const totalIncumplidos = FRACCIONES.filter(f => f >= 1.0).length;
