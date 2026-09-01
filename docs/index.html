@@ -110,6 +110,20 @@
   .map-legend .bar { flex: 1; max-width: 220px; height: 8px; border-radius: 4px; }
   .map-error { color: var(--text-faint); font-size: 13px; text-align: center; padding: 60px 20px; }
 
+  .ops-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; margin-top: 18px; }
+  @media (max-width: 800px) { .ops-grid { grid-template-columns: 1fr; } }
+  .ops-subtitle { font-size: 12.5px; font-weight: 600; color: var(--text-muted); margin: 0 0 10px; }
+  #sla-chart svg { width: 100%; height: auto; }
+  .sla-line { fill: none; stroke: var(--green); stroke-width: 2.5; }
+  .sla-dot { fill: var(--green); }
+  .sla-axis-label { font-family: 'Inter', sans-serif; font-size: 9px; fill: var(--text-faint); }
+  .sla-grid-line { stroke: var(--border); stroke-width: 1; }
+  .ops-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ops-table th { text-align: left; font-size: 10.5px; font-weight: 600; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.03em; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  .ops-table td { padding: 6px 8px; border-bottom: 1px solid var(--border-soft, var(--border)); color: var(--text); }
+  .ops-table td.muted { color: var(--text-faint); }
+  .ops-table tr:last-child td { border-bottom: none; }
+
   .cards { display: flex; flex-direction: column; gap: 14px; }
   a.card {
     display: block; background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
@@ -198,6 +212,28 @@
         <span id="legend-min">—</span>
         <div class="bar" id="legend-bar"></div>
         <span id="legend-max">—</span>
+      </div>
+    </div>
+
+    <div class="map-section">
+      <div class="map-header">
+        <div>
+          <p class="map-title">Desempeño operativo</p>
+          <p class="map-desc">Cómo evoluciona el cumplimiento de servicio mes a mes, y cómo se reparte la carga entre el equipo de soporte — el mismo detalle que en la hoja de cálculo.</p>
+        </div>
+      </div>
+      <div class="ops-grid">
+        <div>
+          <p class="ops-subtitle">Cumplimiento de SLA de resolución, por mes</p>
+          <div id="sla-chart"></div>
+        </div>
+        <div>
+          <p class="ops-subtitle">Carga técnica por nivel de soporte</p>
+          <table class="ops-table">
+            <thead><tr><th>Técnico</th><th>Nivel</th><th>Tickets</th><th>% SLA incumplido</th></tr></thead>
+            <tbody id="tecnicos-tbody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -355,6 +391,56 @@
     localStorage.setItem('nodo-theme', next);
     buildMap(btnVolumen.classList.contains('active') ? 'volumen' : 'margen');
   });
+  // ---- desempeño operativo: tendencia mensual de SLA y carga técnica ----
+  const SLA_MENSUAL = [
+    ["Ene", 0.763], ["Feb", 0.698], ["Mar", 0.734], ["Abr", 0.665], ["May", 0.699], ["Jun", 0.665],
+    ["Jul", 0.634], ["Ago", 0.624], ["Sep", 0.646], ["Oct", 0.615], ["Nov", 0.606], ["Dic", 0.602],
+  ];
+  const TECNICOS = [
+    ["Bernard Beckley", "1ra línea", 359, 0.340],
+    ["Connor Danielovitch", "1ra línea", 347, 0.383],
+    ["Kristos Westoll", "1ra línea", 333, 0.339],
+    ["Nicola Wane", "1ra línea", 367, 0.362],
+    ["Sheela Cutten", "1ra línea", 364, 0.302],
+    ["Adolpho Messingham", "2da línea", 197, 0.355],
+    ["Heather Urry", "2da línea", 177, 0.237],
+    ["Michele Whyatt", "2da línea", 186, 0.323],
+  ];
+
+  (function buildSlaChart() {
+    const W = 420, H = 200, padL = 34, padR = 10, padT = 10, padB = 22;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const n = SLA_MENSUAL.length;
+    const x = i => padL + (i / (n - 1)) * plotW;
+    const y = v => padT + (1 - v) * plotH;
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}">`;
+    [0, 0.25, 0.5, 0.75, 1].forEach(t => {
+      const gy = padT + (1 - t) * plotH;
+      svg += `<line class="sla-grid-line" x1="${padL}" y1="${gy}" x2="${W - padR}" y2="${gy}" />`;
+      svg += `<text class="sla-axis-label" x="${padL - 6}" y="${gy + 3}" text-anchor="end">${Math.round(t * 100)}%</text>`;
+    });
+    const pts = SLA_MENSUAL.map(([, v], i) => `${x(i)},${y(v)}`).join(' ');
+    svg += `<polyline class="sla-line" points="${pts}" />`;
+    SLA_MENSUAL.forEach(([mes, v], i) => {
+      svg += `<circle class="sla-dot" cx="${x(i)}" cy="${y(v)}" r="3" />`;
+      svg += `<text class="sla-axis-label" x="${x(i)}" y="${H - 6}" text-anchor="middle">${mes}</text>`;
+    });
+    svg += '</svg>';
+    document.getElementById('sla-chart').innerHTML = svg;
+  })();
+
+  document.getElementById('tecnicos-tbody').innerHTML = TECNICOS
+    .slice()
+    .sort((a, b) => b[3] - a[3])
+    .map(([nombre, nivel, tickets, pct]) => `
+      <tr>
+        <td>${nombre}</td>
+        <td class="muted">${nivel}</td>
+        <td class="muted">${tickets}</td>
+        <td style="color:${pct >= 0.35 ? 'var(--coral)' : pct <= 0.25 ? 'var(--green)' : 'var(--text)'};">${(pct * 100).toFixed(1)}%</td>
+      </tr>
+    `).join('');
 </script>
 </body>
 </html>
